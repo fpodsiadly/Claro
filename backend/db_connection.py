@@ -1,75 +1,87 @@
 import psycopg2
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load environment variables from .env file if it exists
 load_dotenv()
 
-def connect_to_db(database_name="postgres"):
+def connect_to_db(database_name=None):
     """
-    Establishes a connection to PostgreSQL database on AWS RDS.
+    Establishes a connection to PostgreSQL database (Neon PostgreSQL).
     
     Args:
-        database_name (str): The name of the database you want to connect to. Default is "postgres".
+        database_name (str): The name of the database you want to connect to. 
+                             If None, uses the default database from connection string.
     
     Returns:
         psycopg2.connection: Database connection object or None in case of error.
     """
     try:
-        # Database connection parameters from environment variables or default values
-        host = os.getenv("DB_HOST", "claro-db.cfs64kowk7ct.eu-north-1.rds.amazonaws.com")
-        user = os.getenv("DB_USER", "postgres")
-        password = os.getenv("DB_PASSWORD", "Claro2025!")
-        port = int(os.getenv("DB_PORT", "5432"))
+        # Use DATABASE_URL as primary connection method (recommended by Neon)
+        database_url = os.getenv("DATABASE_URL")
         
-        connection = psycopg2.connect(
-            host=host,
-            database=database_name,
-            user=user,
-            password=password,
-            port=port,
-            connect_timeout=10
-        )
-        return connection
+        if database_url:
+            # If a specific database name is provided, we'll need to modify the URL
+            if database_name:
+                # Parse the URL and replace the database name
+                parsed_url = urlparse(database_url)
+                path_parts = parsed_url.path.split('/')
+                path_parts[-1] = database_name
+                new_path = '/'.join(path_parts)
+                database_url = database_url.replace(parsed_url.path, new_path)
+            
+            # Connect using the connection string
+            connection = psycopg2.connect(database_url)
+            return connection
+        else:
+            # Fallback to individual parameters if URL is not available
+            host = os.getenv("PGHOST")
+            user = os.getenv("PGUSER")
+            password = os.getenv("PGPASSWORD")
+            db_name = database_name if database_name else os.getenv("PGDATABASE")
+            
+            connection = psycopg2.connect(
+                host=host,
+                database=db_name,
+                user=user,
+                password=password,
+                sslmode='require'
+            )
+            return connection
     except Exception as e:
         print(f"Database connection error: {e}")
         return None
 
-def create_database():
+def test_connection():
     """
-    Creates the 'claro-db' database if it doesn't exist.
+    Tests the connection to the database and prints relevant information.
     """
     try:
-        # Connect to the default postgres database
         connection = connect_to_db()
-        connection.autocommit = True  # Required for CREATE DATABASE
-        cursor = connection.cursor()
-        
-        # Check if the database already exists
-        cursor.execute("SELECT 1 FROM pg_database WHERE datname = 'claro-db'")
-        exists = cursor.fetchone()
-        
-        if not exists:
-            print("Creating 'claro-db' database...")
-            cursor.execute("CREATE DATABASE \"claro-db\"")
-            print("Database 'claro-db' has been created successfully.")
-        else:
-            print("Database 'claro-db' already exists.")
+        if connection:
+            cursor = connection.cursor()
+            # Get PostgreSQL version
+            cursor.execute("SELECT version();")
+            version = cursor.fetchone()
+            # Get current database name
+            cursor.execute("SELECT current_database();")
+            current_db = cursor.fetchone()
             
-        cursor.close()
-        connection.close()
-        return True
+            print(f"Successfully connected to PostgreSQL!")
+            print(f"Version: {version[0]}")
+            print(f"Database: {current_db[0]}")
+            
+            cursor.close()
+            connection.close()
+            return True
+        else:
+            print("Failed to connect to the database.")
+            return False
     except Exception as e:
-        print(f"Error creating database: {e}")
+        print(f"Error testing connection: {e}")
         return False
 
 if __name__ == "__main__":
-    # Create database if it doesn't exist
-    if create_database():
-        # Try to connect to the new database
-        conn = connect_to_db("claro-db")
-        if conn:
-            print("Connection to 'claro-db' database successful.")
-            conn.close()
-        else:
-            print("Failed to connect to 'claro-db' database.")
+    # Test the database connection
+    test_connection()

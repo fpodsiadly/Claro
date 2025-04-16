@@ -9,7 +9,7 @@ from datetime import date
 import time
 import os
 import logging
-from db_connection import connect_to_db, create_database
+from db_connection import connect_to_db
 
 # Logging configuration
 logging.basicConfig(
@@ -208,9 +208,10 @@ def save_to_db(articles, pdf_url):
     Returns:
         bool: True if the operation was successful, False otherwise.
     """
-    conn = connect_to_db("claro-db")
+    # Using a new database connection
+    conn = connect_to_db()
     if not conn:
-        logger.error("Cannot connect to 'claro-db' database")
+        logger.error("Cannot connect to database")
         return False
 
     try:
@@ -286,23 +287,17 @@ def save_to_db(articles, pdf_url):
 
 def initialize_database():
     """
-    Checks if the database and tables exist, and creates them if not.
+    Checks if tables exist in the database and creates them if they don't.
     
     Returns:
         bool: True if initialization was successful, False otherwise.
     """
     logger.info("Database initialization...")
     
-    # 1. Create claro-db database if it doesn't exist
-    if not create_database():
-        logger.error("Failed to create claro-db database.")
-        return False
-    
-    # 2. Create tables in the database
-    logger.info("Checking database table structure...")
-    conn = connect_to_db("claro-db")
+    # Connect to the database
+    conn = connect_to_db()
     if not conn:
-        logger.error("Cannot connect to 'claro-db' database")
+        logger.error("Cannot connect to database")
         return False
     
     try:
@@ -321,7 +316,7 @@ def initialize_database():
         if not table_exists:
             logger.info("Creating database table structure...")
             
-            # Read the content of the create_tables.sql file
+            # Read the contents of the create_tables.sql file
             script_dir = os.path.dirname(os.path.abspath(__file__))
             sql_file_path = os.path.join(script_dir, "create_tables.sql")
             
@@ -332,7 +327,7 @@ def initialize_database():
             with open(sql_file_path, "r") as f:
                 sql_script = f.read()
             
-            # Execute SQL script
+            # Execute the SQL script
             cur.execute(sql_script)
             conn.commit()
             logger.info("Table structure has been created.")
@@ -342,6 +337,7 @@ def initialize_database():
         return True
     except Exception as e:
         logger.error(f"Error initializing table structure: {e}")
+        conn.rollback()
         return False
     finally:
         if cur:
