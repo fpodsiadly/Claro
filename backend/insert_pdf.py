@@ -93,31 +93,16 @@ def insert_article_with_version(law_id, article_number, content, version_start_d
     try:
         cursor = connection.cursor()
 
-        # Ensure the law exists
+        # Insert the article with version dates
         cursor.execute("""
-            INSERT INTO laws (law_id, law_name)
-            VALUES (%s, %s)
-            ON CONFLICT (law_id) DO NOTHING;
-        """, (law_id, f"Law {law_id}"))
-
-        # Insert the article
-        cursor.execute("""
-            INSERT INTO articles (law_id, article_number)
-            VALUES (%s, %s)
-            RETURNING id;
-        """, (law_id, article_number))
-        article_id = cursor.fetchone()[0]
-
-        # Insert the article version
-        cursor.execute("""
-            INSERT INTO article_versions (article_id, content, version_start_date, version_end_date)
-            VALUES (%s, %s, %s, %s);
-        """, (article_id, content, version_start_date, version_end_date))
+            INSERT INTO article_versions (law_id, article_number, content, version_start_date, version_end_date)
+            VALUES (%s, %s, %s, %s, %s);
+        """, (law_id, article_number, content, version_start_date, version_end_date))
 
         connection.commit()
         print(f"Article {article_number} with version inserted successfully.")
     except Exception as e:
-        print(f"Error inserting article and version: {e}")
+        print(f"Error inserting article: {e}")
     finally:
         cursor.close()
         connection.close()
@@ -157,9 +142,9 @@ def process_pdf_and_store_articles_with_versions(file_path, law_id, version_star
     # Split the text into articles
     articles = split_to_articles(text)
 
-    # Insert each article and its version into the database
+    # Insert each article into the database
     for number, content in articles:
         print(f"Inserting article {number}...")
         insert_article_with_version(law_id, number, content, version_start_date)
 
-    print("All articles have been processed and stored with versions.")
+    print("All articles have been processed and stored.")

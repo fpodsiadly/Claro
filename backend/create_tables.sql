@@ -17,3 +17,7 @@ CREATE TABLE article_versions (
     version_end_date DATE,   -- NULL = nadal aktualna
     inserted_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Create a GIN index for full-text search on the 'content' column in the 'articles' table
+CREATE INDEX idx_articles_content_search ON articles
+USING GIN (to_tsvector('polish', content));
