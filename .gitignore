@@ -1,1 +1,23 @@
-frontend/node_modules
+# Node.js dependencies
+frontend/node_modules/
+
+# Python bytecode
+backend/__pycache__/
+*.py[cod]
+
+# macOS system files
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+
+# Environment files
+backend/.env
+
+# Build output
+frontend/dist/
+frontend/build/
