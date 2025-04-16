@@ -1,12 +1,29 @@
 # Node.js dependencies
 frontend/node_modules/
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log
 
 # Python bytecode
 backend/__pycache__/
 *.py[cod]
+*.pyc
+__pycache__/
+*$py.class
+*.so
+.Python
+.pytest_cache/
+htmlcov/
+.coverage
+.tox/
+.nox/
+.hypothesis/
 
 # macOS system files
 .DS_Store
+Thumbs.db
 
 # Logs
 *.log
@@ -14,13 +31,40 @@ backend/__pycache__/
 # Temporary files
 *.tmp
 *.swp
+*.swo
 
 # Environment files
 backend/.env
+.env
+.env.local
+.env.development
+.env.production
 
 # Build output
 frontend/dist/
 frontend/build/
+/build/
+/dist/
+/out/
 
 # Archive files
 *.zip
+*.tar.gz
+*.tgz
+
+# Database files
+*.sqlite
+*.db
+isap_response.html
+
+# PDF and other documents
+*.pdf
+!public/*.pdf
+
+# IDE and editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.vs/
+*.code-workspace

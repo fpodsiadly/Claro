@@ -1,4 +1,6 @@
 openai
-psycopg2-binary
+requests
+beautifulsoup4
 fitz
+psycopg2-binary
 re

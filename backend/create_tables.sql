@@ -18,6 +18,6 @@ CREATE TABLE article_versions (
     inserted_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create a GIN index for full-text search on the 'content' column in the 'articles' table
-CREATE INDEX idx_articles_content_search ON articles
-USING GIN (to_tsvector('polish', content));
+-- Create a GIN index for full-text search on the 'content' column in the 'article_versions' table
+CREATE INDEX idx_article_versions_content_search ON article_versions
+USING GIN (to_tsvector('simple', content));
