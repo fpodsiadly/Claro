@@ -21,3 +21,6 @@ backend/.env
 # Build output
 frontend/dist/
 frontend/build/
+
+# Archive files
+*.zip
