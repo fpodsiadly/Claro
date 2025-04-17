@@ -1,28 +1,25 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "frontend/dist/**",
-      "use": "@vite/build",
-      "config": {
-        "distDir": "frontend/dist",
-        "buildCommand": "cd frontend && npm install && npm run build"
-      }
-    },
-    {
-      "src": "backend/api/search.py",
-      "use": "@vercel/python"
-    }
-  ],
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": "vite",
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "backend/api/*.py"
+      "src": "backend/api/(.*)",
+      "dest": "backend/api/search.py"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2))",
-      "dest": "frontend/dist/$1"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/"
     }
   ],
+  "functions": {
+    "backend/api/*.py": {
+      "runtime": "python3.9"
+    }
+  },
   "devCommand": "cd frontend && npm run dev"
 }
