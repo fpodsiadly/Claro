@@ -8,7 +8,7 @@ Claro is an AI-powered application designed to assist users in searching for leg
 - Version control for laws with effective dates.
 - Automatic processing of PDF files, splitting them into articles, and saving them in the database.
 - Integration with OpenAI API for advanced natural language processing and embeddings.
-- Storage of PDF files and logs in AWS S3.
+- Modern cloud-based deployment with Vercel and Neon PostgreSQL.
 
 ## Installation
 
@@ -55,25 +55,24 @@ Claro is an AI-powered application designed to assist users in searching for leg
    - The application uses OpenAI's GPT models for advanced natural language understanding and embeddings.
    - Embeddings are used to enhance search accuracy and relevance.
 
-5. **Storage in AWS S3**:
-   - PDF files and logs are stored in AWS S3 for easy access and scalability.
+5. **Cloud Infrastructure**:
+   - Frontend and serverless backend functions are hosted on Vercel for optimal performance and scalability.
+   - Database is managed by Neon PostgreSQL, providing scalable and serverless PostgreSQL capabilities.
 
 ## Architecture Diagram
 
 ```
-[React Frontend]  →  [API Gateway] → [AWS Lambda (backend)] → [RDS PostgreSQL (laws)]
-                                                ↓
-                                     [OpenAI API (GPT / embeddings)]
-                                                ↓
-                                     [S3 (PDFs, logs)]
+[React Frontend] → [Vercel Serverless Functions] → [Neon PostgreSQL]
+                               ↓
+                    [OpenAI API (GPT / embeddings)]
 ```
 
 ## Technologies
 
-- **Backend**: Python, PostgreSQL, AWS Lambda
+- **Backend**: Python, PostgreSQL, Vercel Serverless Functions
 - **Frontend**: React, Vite
 - **AI**: OpenAI API
-- **Cloud**: AWS (S3, RDS, API Gateway, Lambda)
+- **Cloud**: Vercel (hosting, serverless functions), Neon PostgreSQL (database)
 
 ## Example User Interaction
 
