@@ -68,3 +68,4 @@ isap_response.html
 *.sublime-workspace
 .vs/
 *.code-workspace
+.vercel

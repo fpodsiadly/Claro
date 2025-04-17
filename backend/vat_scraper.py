@@ -9,7 +9,7 @@ from datetime import date
 import time
 import os
 import logging
-from db_connection import connect_to_db
+from backend.db_connection import connect_to_db
 
 # Logging configuration
 logging.basicConfig(

@@ -8,9 +8,17 @@
         "distDir": "dist",
         "buildCommand": "cd frontend && npm install && npm run build"
       }
+    },
+    {
+      "src": "backend/api/**/*.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/api/$1"
+    },
     {
       "src": "/assets/(.*)",
       "headers": { "cache-control": "public, max-age=31536000, immutable" },
@@ -20,5 +28,6 @@
       "src": "/(.*)",
       "dest": "/frontend/dist/$1"
     }
-  ]
+  ],
+  "devCommand": "cd frontend && npm run dev"
 }

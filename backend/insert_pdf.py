@@ -1,5 +1,5 @@
 import psycopg2
-from db_connection import connect_to_db
+from backend.db_connection import connect_to_db
 import re
 import fitz  # PyMuPDF
 import os
