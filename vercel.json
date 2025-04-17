@@ -20,7 +20,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "dist/$1"
+      "dest": "frontend/dist/$1"
     }
   ],
   "devCommand": "cd frontend && npm run dev"
