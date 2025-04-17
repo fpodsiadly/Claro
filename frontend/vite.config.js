@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/', // Zmieniono bazową ścieżkę na root
+  base: 'frontend/', // Bazowa ścieżka dla zasobów
 })
