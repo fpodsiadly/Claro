@@ -86,7 +86,13 @@ def get_openai_response(query, articles):
         str: Response from OpenAI.
     """
     try:
-        client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key or api_key == "sk-twójkluczopenai" or api_key == "your-openai-api-key-here":
+            logger.error("Brak prawidłowego klucza API OpenAI. Proszę ustawić OPENAI_API_KEY w pliku .env")
+            return "Błąd konfiguracji: nie podano prawidłowego klucza API OpenAI. Proszę skontaktować się z administratorem."
+            
+        client = openai.OpenAI(api_key=api_key)
+        logger.info(f"Przygotowuję zapytanie do OpenAI z {len(articles)} artykułami")
         
         # Prepare article text
         articles_text = ""
@@ -96,6 +102,7 @@ def get_openai_response(query, articles):
             articles_text += f"\n\nArtykuł {article['article_number']} ({article['law_name']}):\n{content_preview}"
         
         # Execute a request to the OpenAI API
+        logger.info("Wysyłam zapytanie do OpenAI API...")
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo",  # Changed from gpt-4 to gpt-3.5-turbo
             messages=[
@@ -106,10 +113,12 @@ def get_openai_response(query, articles):
             max_tokens=1000
         )
         
-        return completion.choices[0].message.content
+        answer = completion.choices[0].message.content
+        logger.info("Otrzymano odpowiedź z OpenAI API")
+        return answer
     except Exception as e:
-        logger.error(f"Error communicating with OpenAI API: {str(e)}")
-        return "Przepraszam, wystąpił błąd podczas generowania odpowiedzi. Proszę spróbować ponownie później."
+        logger.error(f"Error communicating with OpenAI API: {str(e)}", exc_info=True)
+        return f"Przepraszam, wystąpił błąd podczas generowania odpowiedzi: {str(e)}. Proszę spróbować ponownie później."
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):

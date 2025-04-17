@@ -35,13 +35,21 @@ function App() {
         body: JSON.stringify({ query: input }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Błąd API:', response.status, errorData)
-        throw new Error(`Błąd API: ${response.status} ${errorData.error || ''}`)
+      // Logowanie odpowiedzi
+      console.log('Status odpowiedzi:', response.status)
+      console.log('Nagłówki odpowiedzi:', response.headers)
+
+      const responseText = await response.text()
+      console.log('Surowa odpowiedź:', responseText)
+
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Błąd parsowania JSON:', parseError)
+        throw new Error(`Otrzymano nieprawidłową odpowiedź: ${responseText}`)
       }
 
-      const data = await response.json()
       console.log('Odpowiedź API:', data)
 
       // Dodaj odpowiedź od API do historii
@@ -56,7 +64,7 @@ function App() {
       setMessages((prevMessages) => [...prevMessages, botMessage])
     } catch (error) {
       console.error('Błąd:', error)
-      // Dodaj wiadomość o błędzie
+      // Dodaj wiadomość o błędzie z pełnymi szczegółami
       const errorMessage = {
         role: 'assistant',
         content: `Przepraszam, wystąpił błąd podczas przetwarzania zapytania: ${error.message}`,
