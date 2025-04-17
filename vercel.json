@@ -5,7 +5,7 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
+        "distDir": "frontend/dist",
         "buildCommand": "cd frontend && npm install && npm run build"
       }
     },
@@ -17,7 +17,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/api/$1"
+      "dest": "/backend/api/search.py",
     },
     {
       "src": "/assets/(.*)",
@@ -26,7 +26,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/frontend/dist/$1"
+      "dest": "/frontend/dist/index.html"
     }
   ],
   "devCommand": "cd frontend && npm run dev"
