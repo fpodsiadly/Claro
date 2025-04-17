@@ -1,28 +1,31 @@
 {
   "version": 2,
-  "framework": "vite",
   "builds": [
     {
-      "src": "frontend/package.json",
+      "src": "frontend/dist/**",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
+        "distDir": "frontend/dist",
         "buildCommand": "cd frontend && npm install && npm run build"
       }
     },
     {
-      "src": "backend/api/**/*.py",
+      "src": "backend/api/search.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/api/search.py"
+      "dest": "backend/api/search.py"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|ico|svg|woff2?))",
+      "dest": "frontend/dist/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/frontend/dist/index.html"
+      "dest": "frontend/dist/index.html"
     }
   ],
   "devCommand": "cd frontend && npm run dev"
