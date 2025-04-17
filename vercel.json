@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/dist",
   "builds": [
     {
       "src": "frontend/package.json",
@@ -16,12 +18,21 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/api/index.py"
+      "dest": "backend/api/search.py"
     },
     {
       "src": "/(.*)",
       "dest": "frontend/dist/$1"
+    },
+    {
+      "src": "/", 
+      "dest": "frontend/dist/index.html"
     }
   ],
+  "functions": {
+    "backend/api/*.py": {
+      "runtime": "python3.9"
+    }
+  },
   "devCommand": "cd frontend && npm run dev"
 }
