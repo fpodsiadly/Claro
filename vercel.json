@@ -19,8 +19,21 @@
       "dest": "backend/api/index.py"
     },
     {
-      "src": "/(.*)",
+      "src": "/assets/(.*)",
+      "headers": { "cache-control": "s-maxage=31536000, immutable" },
+      "dest": "frontend/dist/assets/$1"
+    },
+    {
+      "src": "/(.*\\.[a-zA-Z0-9]+)",
+      "headers": { "cache-control": "s-maxage=86400, public" },
       "dest": "frontend/dist/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "frontend/dist/index.html"
     }
   ],
   "devCommand": "cd frontend && npm run dev"
