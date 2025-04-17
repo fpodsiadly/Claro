@@ -1,14 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm rinstall && npm run build",
-  "outputDirectory": "frontend/dist",
   "builds": [
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
-        "zeroConfig": true
+        "distDir": "dist"
       }
     },
     {
@@ -19,30 +16,12 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/api/search.py"
-    },
-    {
-      "src": "/frontend",
-      "dest": "/index.html",
-      "status": 308
-    },
-    {
-      "src": "/frontend/(.*)",
-      "dest": "/$1",
-      "status": 308
-    },
-    {
-      "handle": "filesystem"
+      "dest": "backend/api/index.py"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "frontend/dist/$1"
     }
   ],
-  "functions": {
-    "backend/api/*.py": {
-      "runtime": "python3.9"
-    }
-  },
   "devCommand": "cd frontend && npm run dev"
 }
