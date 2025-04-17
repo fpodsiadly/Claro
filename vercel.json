@@ -21,11 +21,14 @@
       "dest": "backend/api/search.py"
     },
     {
-      "src": "/(.*)",
-      "dest": "frontend/dist/$1"
+      "src": "/assets/(.*)",
+      "dest": "frontend/dist/assets/$1"
     },
     {
-      "src": "/", 
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
       "dest": "frontend/dist/index.html"
     }
   ],

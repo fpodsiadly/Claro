@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/', // Ustawienie bazowej ścieżki dla środowiska produkcyjnego
+  base: '/', // Bazowa ścieżka dla zasobów
 })
