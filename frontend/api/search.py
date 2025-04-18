@@ -55,21 +55,90 @@ def search_articles(query, conn, limit=5):
     """
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Using full-text search optimization
+            # Zaawansowane wyszukiwanie pełnotekstowe z rankingiem trafności
             sql = """
-                SELECT a.article_number, av.content, l.law_name
-                FROM articles a
-                JOIN article_versions av ON a.id = av.article_id
-                JOIN laws l ON a.law_id = l.law_id
-                WHERE to_tsvector('simple', av.content) @@ plainto_tsquery('simple', %s)
-                AND av.version_end_date IS NULL
-                ORDER BY av.version_start_date DESC
+                SELECT 
+                    a.article_number, 
+                    av.content, 
+                    l.law_name,
+                    ts_rank_cd(to_tsvector('polish', av.content), plainto_tsquery('polish', %s)) AS rank
+                FROM 
+                    articles a
+                JOIN 
+                    article_versions av ON a.id = av.article_id
+                JOIN 
+                    laws l ON a.law_id = l.law_id
+                WHERE 
+                    to_tsvector('polish', av.content) @@ plainto_tsquery('polish', %s)
+                    AND av.version_end_date IS NULL
+                ORDER BY 
+                    rank DESC,
+                    av.version_start_date DESC
                 LIMIT %s
             """
-            cur.execute(sql, (query, limit))
-            return cur.fetchall()
+            
+            # Fallback na prostsze wyszukiwanie, jeśli nie znajdzie wyników
+            # lub jeśli język 'polish' nie jest dostępny w PostgreSQL
+            try:
+                cur.execute(sql, (query, query, limit))
+                results = cur.fetchall()
+                
+                if not results:
+                    logger.info("No results using 'polish' dictionary, falling back to 'simple'")
+                    sql_fallback = """
+                        SELECT 
+                            a.article_number, 
+                            av.content, 
+                            l.law_name,
+                            ts_rank_cd(to_tsvector('simple', av.content), plainto_tsquery('simple', %s)) AS rank
+                        FROM 
+                            articles a
+                        JOIN 
+                            article_versions av ON a.id = av.article_id
+                        JOIN 
+                            laws l ON a.law_id = l.law_id
+                        WHERE 
+                            to_tsvector('simple', av.content) @@ plainto_tsquery('simple', %s)
+                            OR av.content ILIKE %s
+                            AND av.version_end_date IS NULL
+                        ORDER BY 
+                            rank DESC,
+                            av.version_start_date DESC
+                        LIMIT %s
+                    """
+                    cur.execute(sql_fallback, (query, query, f"%{query}%", limit))
+                    results = cur.fetchall()
+                
+                return results
+            
+            except psycopg2.Error as e:
+                logger.error(f"Search error with 'polish' dictionary: {str(e)}")
+                # Próba z prostszym słownikiem
+                sql_simple = """
+                    SELECT 
+                        a.article_number, 
+                        av.content, 
+                        l.law_name,
+                        ts_rank_cd(to_tsvector('simple', av.content), plainto_tsquery('simple', %s)) AS rank
+                    FROM 
+                        articles a
+                    JOIN 
+                        article_versions av ON a.id = av.article_id
+                    JOIN 
+                        laws l ON a.law_id = l.law_id
+                    WHERE 
+                        to_tsvector('simple', av.content) @@ plainto_tsquery('simple', %s)
+                        OR av.content ILIKE %s
+                        AND av.version_end_date IS NULL
+                    ORDER BY 
+                        rank DESC,
+                        av.version_start_date DESC
+                    LIMIT %s
+                """
+                cur.execute(sql_simple, (query, query, f"%{query}%", limit))
+                return cur.fetchall()
     except Exception as e:
-        logger.error(f"Error searching for articles: {str(e)}")
+        logger.error(f"Error searching for articles: {str(e)}", exc_info=True)
         return []
 
 def get_openai_response(query, articles):
@@ -88,31 +157,67 @@ def get_openai_response(query, articles):
         if not api_key or api_key == "sk-twójkluczopenai" or api_key == "your-openai-api-key-here":
             logger.error("Brak prawidłowego klucza API OpenAI. Proszę ustawić OPENAI_API_KEY w pliku .env")
             return "Błąd konfiguracji: nie podano prawidłowego klucza API OpenAI. Proszę skontaktować się z administratorem."
-            
+        
         client = openai.OpenAI(api_key=api_key)
         logger.info(f"Przygotowuję zapytanie do OpenAI z {len(articles)} artykułami")
         
-        # Prepare article text
+        # Przygotowanie tekstu artykułów w lepszym formacie
         articles_text = ""
-        for article in articles:
-            # Shortened content, up to 300 characters
-            content_preview = article['content'][:300] + "..." if len(article['content']) > 300 else article['content']
-            articles_text += f"\n\nArtykuł {article['article_number']} ({article['law_name']}):\n{content_preview}"
+        for i, article in enumerate(articles):
+            # Określenie priorytetu artykułu na podstawie rankingu (jeśli istnieje)
+            priority = f"Priorytet: {i+1}" if i < 3 else "Niższy priorytet"
+            
+            # Pełna zawartość artykułu dla wyższych priorytetów, skrócona dla niższych
+            if i < 3 and 'rank' in article and article['rank'] > 0.5:
+                content = article['content']
+            else:
+                # Inteligentne skracanie treści, zachowując kluczowe fragmenty
+                content = article['content'][:500] + "..." if len(article['content']) > 500 else article['content']
+            
+            articles_text += f"\n\nARTYKUŁ {i+1}: {article['article_number']} ({article['law_name']}) - {priority}\n{content}"
         
-        # Execute a request to the OpenAI API
+        # Instrukcje systemowe dla modelu
+        system_instruction = """
+        Jesteś ekspertem prawnym specjalizującym się w polskim prawie, szczególnie podatkowym. Twoje zadanie:
+        
+        1. Dokładnie przeanalizuj dostarczone przepisy prawne w kontekście zapytania użytkownika.
+        2. Udziel jasnej, zwięzłej i dokładnej odpowiedzi opartej WYŁĄCZNIE na dostarczonych przepisach.
+        3. Jeśli przepisy nie są jednoznaczne, wyjaśnij różne możliwe interpretacje.
+        4. Odpowiadaj w języku polskim w sposób przystępny dla osoby bez wykształcenia prawniczego.
+        5. Używaj konkretnych odwołań do numerów artykułów, gdy je cytujesz.
+        6. Nie wymyślaj przepisów ani interpretacji, których nie ma w dostarczonych materiałach.
+        7. Jeśli dostarczone przepisy nie są wystarczające, wyraźnie to zaznacz.
+        
+        Pamiętaj, że Twoja odpowiedź może być wykorzystana do celów informacyjnych, ale nie zastępuje profesjonalnej porady prawnej.
+        """
+        
+        # Instrukcja dla użytkownika
+        user_instruction = f"""
+        Pytanie użytkownika: {query}
+        
+        Na podstawie poniższych przepisów prawnych udziel odpowiedzi:
+        {articles_text}
+        
+        Pamiętaj, żeby:
+        - Cytować konkretne artykuły
+        - Odnosić się bezpośrednio do pytania użytkownika
+        - Wskazać jasne wnioski na podstawie przepisów
+        """
+        
+        # Wykonanie zapytania do OpenAI API
         logger.info("Wysyłam zapytanie do OpenAI API...")
         completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Changed from gpt-4 to gpt-3.5-turbo
+            model="gpt-3.5-turbo",  # Można zmienić na gpt-4 dla lepszych wyników
             messages=[
-                {"role": "system", "content": "Jesteś prawnikiem specjalizującym się w polskim prawie. Odpowiadasz na pytania użytkowników na podstawie przepisów prawnych."},
-                {"role": "user", "content": f"Pytanie: {query}\n\nPowiązane przepisy:{articles_text}"}
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_instruction}
             ],
-            temperature=0.3,
-            max_tokens=1000
+            temperature=0.2,  # Niższa temperatura dla bardziej precyzyjnych, mniej kreatywnych odpowiedzi
+            max_tokens=1500
         )
         
         answer = completion.choices[0].message.content
-        logger.info("Otrzymano odpowiedź z OpenAI API")
+        logger.info(f"Otrzymano odpowiedź z OpenAI API o długości {len(answer)} znaków")
         return answer
     except Exception as e:
         logger.error(f"Error communicating with OpenAI API: {str(e)}", exc_info=True)

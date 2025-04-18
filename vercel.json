@@ -2,26 +2,50 @@
   "version": 2,
   "builds": [
     {
-      "src": "frontend/package.json",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist"
       }
     },
     {
-      "src": "backend/api/search.py",
+      "src": "api/*.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/api/index.py"
+      "dest": "api/index.py"
     },
     {
-      "src": "/(.*)",
+      "src": "/api/status",
+      "dest": "api/index.py?path=/status"
+    },
+    {
+      "src": "/api/test",
+      "dest": "api/test.py"
+    },
+    {
+      "src": "/assets/(.*)",
+      "headers": { "cache-control": "s-maxage=31536000, immutable" },
+      "dest": "dist/assets/$1"
+    },
+    {
+      "src": "/(.*\\.(?:js|css|svg|ico|png|jpg|jpeg|gif|woff2?))",
+      "headers": { "cache-control": "s-maxage=86400, public" },
       "dest": "dist/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "dist/index.html"
     }
   ],
-  "devCommand": "cd frontend && npm run dev"
+  "devCommand": "cd frontend && npm run dev",
+  "env": {
+    "PYTHONPATH": "/var/task"
+  }
 }

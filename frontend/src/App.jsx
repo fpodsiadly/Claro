@@ -1,10 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [apiStatus, setApiStatus] = useState(null)
+
+  // Sprawdzenie statusu API przy pierwszym ładowaniu
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      try {
+        const apiUrl =
+          process.env.NODE_ENV === 'production'
+            ? '/api/status'
+            : 'http://localhost:3000/api/status'
+        const response = await fetch(apiUrl)
+        if (response.ok) {
+          const data = await response.json()
+          setApiStatus(data)
+          console.log('Status API:', data)
+        }
+      } catch (error) {
+        console.error('Błąd podczas sprawdzania statusu API:', error)
+      }
+    }
+
+    checkApiStatus()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -22,11 +45,12 @@ function App() {
       const apiUrl =
         process.env.NODE_ENV === 'production'
           ? '/api'
-          : 'http://localhost:3000/api' // Dla lokalnego rozwoju
+          : 'http://localhost:3000/api'
 
       console.log('Wysyłanie zapytania do:', apiUrl)
 
       // Wykonaj zapytanie do API
+      const startTime = performance.now()
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -34,6 +58,7 @@ function App() {
         },
         body: JSON.stringify({ query: input }),
       })
+      const requestTime = performance.now() - startTime
 
       // Logowanie odpowiedzi
       console.log('Status odpowiedzi:', response.status)
@@ -59,6 +84,11 @@ function App() {
           data.answer ||
           'Przepraszam, nie mogę znaleźć odpowiedzi na to pytanie.',
         sources: data.sources || [],
+        stats: data.stats || {
+          requestTime: `${(requestTime / 1000).toFixed(2)}s`,
+        },
+        fromCache: data.from_cache || false,
+        requestId: data.request_id || 'unknown',
       }
 
       setMessages((prevMessages) => [...prevMessages, botMessage])
@@ -79,6 +109,22 @@ function App() {
     <div className="chat-container">
       <div className="chat-header">
         <h1>Claro - Asystent prawny</h1>
+        {apiStatus && (
+          <div className="api-status">
+            <span
+              className={`status-indicator ${
+                apiStatus.database?.status === 'online' ? 'online' : 'offline'
+              }`}
+            ></span>
+            <span className="status-text">
+              {apiStatus.database?.status === 'online'
+                ? `Baza danych: online (${
+                    apiStatus.database?.articles || '?'
+                  } artykułów)`
+                : 'Baza danych: offline'}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="messages-container">
@@ -87,7 +133,7 @@ function App() {
             <h2>Witaj w Claro!</h2>
             <p>
               Zadaj pytanie dotyczące prawa podatkowego, a ja spróbuję na nie
-              odpowiedzieć.
+              odpowiedzieć na podstawie dostępnych przepisów prawnych.
             </p>
           </div>
         ) : (
@@ -102,6 +148,30 @@ function App() {
                       <li key={idx}>{source}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+              {message.stats && message.role === 'assistant' && (
+                <div className="message-stats">
+                  {message.fromCache ? (
+                    <span className="cache-info">
+                      ⚡ Z pamięci podręcznej ({message.stats.cache_age}s)
+                    </span>
+                  ) : (
+                    <>
+                      <span className="time-info">
+                        Czas wyszukiwania:{' '}
+                        {message.stats.search_time || message.stats.requestTime}
+                      </span>
+                      {message.stats.openai_time && (
+                        <span className="time-info">
+                          Czas odpowiedzi AI: {message.stats.openai_time}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {message.requestId && (
+                    <span className="request-id">ID: {message.requestId}</span>
+                  )}
                 </div>
               )}
             </div>
@@ -124,7 +194,7 @@ function App() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Wpisz swoje pytanie..."
+          placeholder="Wpisz swoje pytanie prawne..."
           disabled={loading}
         />
         <button type="submit" disabled={loading || !input.trim()}>
