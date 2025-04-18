@@ -1,6 +1,0 @@
-openai
-requests
-beautifulsoup4
-fitz
-psycopg2-binary
-re

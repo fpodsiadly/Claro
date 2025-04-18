@@ -1,15 +1,53 @@
 import json
 import os
+import sys
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import openai
 import logging
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs
-import sys
 from pathlib import Path
 
-from scripts.db_connection import connect_to_db
+# Dynamiczne dodawanie katalogu z modułami do ścieżki
+current_dir = Path(__file__).parent.absolute()
+sys.path.insert(0, str(current_dir))
+
+# Teraz próba importu modułu db_connection
+try:
+    from db_connection import connect_to_db
+except ImportError as e:
+    print(f"Błąd importu modułu db_connection: {e}")
+    # Fallback - funkcja bezpośrednio
+    def connect_to_db(database_name=None):
+        """
+        Fallback function if module import fails
+        """
+        try:
+            # Use DATABASE_URL as primary connection method (common for Vercel)
+            database_url = os.getenv("DATABASE_URL")
+            
+            if database_url:
+                connection = psycopg2.connect(database_url)
+                return connection
+            else:
+                # Fallback to individual parameters if URL is not available
+                host = os.getenv("PGHOST") or os.getenv("DB_HOST")
+                user = os.getenv("PGUSER") or os.getenv("DB_USER") 
+                password = os.getenv("PGPASSWORD") or os.getenv("DB_PASSWORD")
+                db_name = database_name or os.getenv("PGDATABASE") or os.getenv("DB_NAME")
+                
+                connection = psycopg2.connect(
+                    host=host,
+                    database=db_name,
+                    user=user,
+                    password=password,
+                    sslmode='require'
+                )
+                return connection
+        except Exception as e:
+            print(f"Database connection error: {e}")
+            return None
 
 # Logging configuration
 logger = logging.getLogger()
