@@ -5,7 +5,4 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/', // Bazowa ścieżka dla zasobów
-  build: {
-    outDir: '../dist', // Katalog wyjściowy
-  },
 })

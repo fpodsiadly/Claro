@@ -16,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import funkcji z lokalnego modułu search.py
-from search import search_articles, get_openai_response, get_db_connection
+from api.search import search_articles, get_openai_response, get_db_connection
 
 def handler(request):
     """

@@ -9,9 +9,7 @@ from urllib.parse import parse_qs
 import sys
 from pathlib import Path
 
-# Dodanie ścieżki do katalogu backend
-sys.path.append(str(Path(__file__).parent.parent))
-from db_connection import connect_to_db
+from scripts.db_connection import connect_to_db
 
 # Logging configuration
 logger = logging.getLogger()
